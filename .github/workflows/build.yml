@@ -32,8 +32,24 @@ jobs:
       - name: Install PlatformIO
         run: pip install --upgrade platformio
 
-      - name: Build Firmware (with merged binary)
+      - name: Build Firmware
         run: pio run -e cardputer_adv
+
+      - name: Merge Binaries into Single File
+        run: |
+          BUILD_DIR=".pio/build/cardputer_adv"
+          # Ищем путь к boot_app0.bin (он нужен для работы OTA)
+          BOOT_APP0=$(find ~/.platformio/packages -name boot_app0.bin | head -n 1)
+          echo "Found boot_app0.bin at: $BOOT_APP0"
+          
+          # Склеиваем бинарники
+          python -m esptool --chip esp32s3 merge_bin \
+            --flash_mode dio --flash_freq 80m --flash_size 8MB \
+            -o "$BUILD_DIR/firmware-merged.bin" \
+            0x0 "$BUILD_DIR/bootloader.bin" \
+            0x8000 "$BUILD_DIR/partitions.bin" \
+            0xe000 "$BOOT_APP0" \
+            0x10000 "$BUILD_DIR/firmware.bin"
 
       - name: Upload Firmware Artifacts
         uses: actions/upload-artifact@v4
