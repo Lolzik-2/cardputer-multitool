@@ -1,0 +1,50 @@
+name: Build Cardputer Firmware
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Позволяет запускать сборку вручную из вкладки Actions
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Build Firmware
+        run: pio run -e cardputer_adv
+
+      - name: Merge Binaries (Optional)
+        run: pio run -t merge -e cardputer_adv
+
+      - name: Upload Firmware Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cardputer-firmware
+          if-no-files-found: error
+          path: |
+            .pio/build/cardputer_adv/firmware.bin
+            .pio/build/cardputer_adv/firmware-merged.bin
+            .pio/build/cardputer_adv/bootloader.bin
+            .pio/build/cardputer_adv/partitions.bin
