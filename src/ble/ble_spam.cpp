@@ -1,6 +1,6 @@
-// ble/ble_spam.cpp
 #include "ble_spam.h"
 #include <NimBLEDevice.h>
+#include <esp_mac.h>
 
 static NimBLEAdvertising* pAdvertising = nullptr;
 static bool spamRunning = false;
@@ -16,6 +16,7 @@ void bleSpamSetup() {
 void bleSpamStart(BleSpamType type) {
   spamType = type;
   spamRunning = true;
+  lastAdv = 0;
 }
 
 void bleSpamStop() {
@@ -23,30 +24,28 @@ void bleSpamStop() {
   if (pAdvertising) pAdvertising->stop();
 }
 
+bool isBleSpamRunning() {
+  return spamRunning;
+}
+
 void bleSpamLoop() {
   if (!spamRunning) return;
   if (millis() - lastAdv < 100) return;
   lastAdv = millis();
 
-  // Ротация MAC для обхода фильтрации
-  esp_random(); // инициализация
+  // Ротация MAC-адреса для обхода фильтрации
   for (int i = 0; i < 6; i++) mac[i] = random(256);
-  mac[0] |= 0xC0; // locally administered
+  mac[0] |= 0xC0; // locally administered address
 
   NimBLEAdvertisementData advData;
-
   if (spamType == BLE_SAMSUNG) {
-    // FastPair для Galaxy Watch / Buds
     advData.setName("Galaxy Watch");
-    // В реальном Bruce используются конкретные manufacturer-specific data.
-    // Здесь — базовый пакет для триггера уведомлений.
   } else {
-    // Google FastPair для Pixel
     advData.setName("Pixel");
   }
 
   pAdvertising->stop();
-  NimBLEDevice::setOwnAddr(mac);
+  esp_base_mac_addr_set(mac); // замена NimBLEDevice::setOwnAddr
   pAdvertising->setAdvertisementData(advData);
   pAdvertising->start();
 }
