@@ -5,7 +5,7 @@ on:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Позволяет запускать сборку вручную из вкладки Actions
+  workflow_dispatch:
 
 jobs:
   build:
@@ -32,11 +32,8 @@ jobs:
       - name: Install PlatformIO
         run: pip install --upgrade platformio
 
-      - name: Build Firmware
+      - name: Build Firmware (with merged binary)
         run: pio run -e cardputer_adv
-
-      - name: Merge Binaries (Optional)
-        run: pio run -t merge -e cardputer_adv
 
       - name: Upload Firmware Artifacts
         uses: actions/upload-artifact@v4
