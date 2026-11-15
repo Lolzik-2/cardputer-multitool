@@ -38,11 +38,11 @@ jobs:
       - name: Merge Binaries into Single File
         run: |
           BUILD_DIR=".pio/build/cardputer_adv"
-          # Ищем путь к boot_app0.bin (он нужен для работы OTA)
           BOOT_APP0=$(find ~/.platformio/packages -name boot_app0.bin | head -n 1)
           echo "Found boot_app0.bin at: $BOOT_APP0"
           
-          # Склеиваем бинарники
+          pip install esptool
+          
           python -m esptool --chip esp32s3 merge_bin \
             --flash_mode dio --flash_freq 80m --flash_size 8MB \
             -o "$BUILD_DIR/firmware-merged.bin" \
